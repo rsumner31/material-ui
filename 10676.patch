@@ -1,0 +1,22 @@
+From b27f1fde32a07195bc50ca3cc5f39d17a06acd64 Mon Sep 17 00:00:00 2001
+From: Losses Don <losses.don@gmail.com>
+Date: Fri, 16 Mar 2018 15:22:51 +0800
+Subject: [PATCH] Add Team SC into showcase.
+
+---
+ docs/src/pages/discover-more/showcase/showcase.md | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/docs/src/pages/discover-more/showcase/showcase.md b/docs/src/pages/discover-more/showcase/showcase.md
+index b7281b9e2f..549006be47 100644
+--- a/docs/src/pages/discover-more/showcase/showcase.md
++++ b/docs/src/pages/discover-more/showcase/showcase.md
+@@ -117,3 +117,8 @@ Want to add your app? Found an app that no longer works or no longer uses Materi
+   developers: https://developers.rung.com.br
+ 
+   app: https://app.rung.com.br
++
++### 20. Team SC
++   The site of a cognitive neuroscience research group, with a carefully designed interface and animation.
++   
++   http://sc.bnu.edu.cn
