@@ -1,0 +1,383 @@
+From 52706368048bf8d079f7e4c04f85c33fcc0f8c79 Mon Sep 17 00:00:00 2001
+From: Olivier Tassinari <olivier.tassinari@gmail.com>
+Date: Thu, 15 Mar 2018 23:30:48 +0100
+Subject: [PATCH] [theme] Add a props theme key
+
+---
+ pages/api/button.md               |  2 +-
+ pages/api/icon-button.md          |  2 +-
+ src/Button/Button.js              |  1 -
+ src/Button/Button.spec.js         |  2 +-
+ src/ButtonBase/ButtonBase.spec.js | 45 ++++++++++++++++++++++++++++-----------
+ src/IconButton/IconButton.js      |  1 -
+ src/IconButton/IconButton.spec.js |  2 +-
+ src/internal/SwitchBase.js        |  3 ++-
+ src/internal/SwitchBase.spec.js   |  2 +-
+ src/styles/createMuiTheme.js      |  8 ++++---
+ src/styles/getStylesCreator.js    |  3 ++-
+ src/styles/getThemeProps.js       | 11 ++++++++++
+ src/styles/getThemeProps.spec.js  | 42 ++++++++++++++++++++++++++++++++++++
+ src/styles/withStyles.js          |  5 +++--
+ 14 files changed, 103 insertions(+), 26 deletions(-)
+ create mode 100644 src/styles/getThemeProps.js
+ create mode 100644 src/styles/getThemeProps.spec.js
+
+diff --git a/pages/api/button.md b/pages/api/button.md
+index 044ba308b7..7fc669a248 100644
+--- a/pages/api/button.md
++++ b/pages/api/button.md
+@@ -18,7 +18,7 @@ filename: /src/Button/Button.js
+ | <span class="prop-name">component</span> | <span class="prop-type">union:&nbsp;string&nbsp;&#124;<br>&nbsp;func<br> |  | The component used for the root node. Either a string to use a DOM element or a component. The default value is a `button`. |
+ | <span class="prop-name">disabled</span> | <span class="prop-type">bool | <span class="prop-default">false</span> | If `true`, the button will be disabled. |
+ | <span class="prop-name">disableFocusRipple</span> | <span class="prop-type">bool | <span class="prop-default">false</span> | If `true`, the  keyboard focus ripple will be disabled. `disableRipple` must also be true. |
+-| <span class="prop-name">disableRipple</span> | <span class="prop-type">bool | <span class="prop-default">false</span> | If `true`, the ripple effect will be disabled. |
++| <span class="prop-name">disableRipple</span> | <span class="prop-type">bool |  | If `true`, the ripple effect will be disabled. |
+ | <span class="prop-name">fullWidth</span> | <span class="prop-type">bool | <span class="prop-default">false</span> | If `true`, the button will take up the full width of its container. |
+ | <span class="prop-name">href</span> | <span class="prop-type">string |  | The URL to link to when the button is clicked. If defined, an `a` element will be used as the root node. |
+ | <span class="prop-name">mini</span> | <span class="prop-type">bool | <span class="prop-default">false</span> | If `true`, and `variant` is `'fab'`, will use mini floating action button styling. |
+diff --git a/pages/api/icon-button.md b/pages/api/icon-button.md
+index 9db63823c7..2c63b820f4 100644
+--- a/pages/api/icon-button.md
++++ b/pages/api/icon-button.md
+@@ -17,7 +17,7 @@ regarding the available icon options.
+ | <span class="prop-name">classes</span> | <span class="prop-type">object |  | Useful to extend the style applied to components. |
+ | <span class="prop-name">color</span> | <span class="prop-type">enum:&nbsp;'default'&nbsp;&#124;<br>&nbsp;'inherit'&nbsp;&#124;<br>&nbsp;'primary'&nbsp;&#124;<br>&nbsp;'secondary'<br> | <span class="prop-default">'default'</span> | The color of the component. It supports those theme colors that make sense for this component. |
+ | <span class="prop-name">disabled</span> | <span class="prop-type">bool | <span class="prop-default">false</span> | If `true`, the button will be disabled. |
+-| <span class="prop-name">disableRipple</span> | <span class="prop-type">bool | <span class="prop-default">false</span> | If `true`, the ripple will be disabled. |
++| <span class="prop-name">disableRipple</span> | <span class="prop-type">bool |  | If `true`, the ripple will be disabled. |
+ 
+ Any other properties supplied will be [spread to the root element](/guides/api#spread).
+ 
+diff --git a/src/Button/Button.js b/src/Button/Button.js
+index 8cccf3a3c8..8aef130337 100644
+--- a/src/Button/Button.js
++++ b/src/Button/Button.js
+@@ -265,7 +265,6 @@ Button.defaultProps = {
+   color: 'default',
+   disabled: false,
+   disableFocusRipple: false,
+-  disableRipple: false,
+   fullWidth: false,
+   mini: false,
+   size: 'medium',
+diff --git a/src/Button/Button.spec.js b/src/Button/Button.spec.js
+index cf7d4d6ea6..8de6ad2b17 100644
+--- a/src/Button/Button.spec.js
++++ b/src/Button/Button.spec.js
+@@ -193,7 +193,7 @@ describe('<Button />', () => {
+ 
+   it('should have a ripple by default', () => {
+     const wrapper = shallow(<Button>Hello World</Button>);
+-    assert.strictEqual(wrapper.props().disableRipple, false);
++    assert.strictEqual(wrapper.props().disableRipple, undefined);
+   });
+ 
+   it('should pass disableRipple to ButtonBase', () => {
+diff --git a/src/ButtonBase/ButtonBase.spec.js b/src/ButtonBase/ButtonBase.spec.js
+index b8d6791d52..a9d5c1f442 100644
+--- a/src/ButtonBase/ButtonBase.spec.js
++++ b/src/ButtonBase/ButtonBase.spec.js
+@@ -235,7 +235,7 @@ describe('<ButtonBase />', () => {
+ 
+     before(() => {
+       wrapper = mount(
+-        <ButtonBaseNaked classes={{}} focusRipple>
++        <ButtonBaseNaked theme={{}} classes={{}} focusRipple>
+           Hello
+         </ButtonBaseNaked>,
+       );
+@@ -329,7 +329,7 @@ describe('<ButtonBase />', () => {
+     before(() => {
+       clock = useFakeTimers();
+       wrapper = mount(
+-        <ButtonBaseNaked classes={{}} id="test-button">
++        <ButtonBaseNaked theme={{}} classes={{}} id="test-button">
+           Hello
+         </ButtonBaseNaked>,
+       );
+@@ -422,7 +422,7 @@ describe('<ButtonBase />', () => {
+ 
+     it('when disabled should not persist event', () => {
+       const wrapper = mount(
+-        <ButtonBaseNaked classes={{}} disabled>
++        <ButtonBaseNaked theme={{}} classes={{}} disabled>
+           Hello
+         </ButtonBaseNaked>,
+       );
+@@ -436,7 +436,12 @@ describe('<ButtonBase />', () => {
+       const eventMock = 'woofButtonBase';
+       const onKeyboardFocusSpy = spy();
+       const wrapper = mount(
+-        <ButtonBaseNaked classes={{}} component="span" onKeyboardFocus={onKeyboardFocusSpy}>
++        <ButtonBaseNaked
++          theme={{}}
++          classes={{}}
++          component="span"
++          onKeyboardFocus={onKeyboardFocusSpy}
++        >
+           Hello
+         </ButtonBaseNaked>,
+       );
+@@ -454,7 +459,7 @@ describe('<ButtonBase />', () => {
+         </a>
+       );
+       const wrapper = mount(
+-        <ButtonBaseNaked classes={{}} component={MyLink}>
++        <ButtonBaseNaked theme={{}} classes={{}} component={MyLink}>
+           Hello
+         </ButtonBaseNaked>,
+       );
+@@ -472,7 +477,11 @@ describe('<ButtonBase />', () => {
+ 
+     describe('avoids multiple keydown presses', () => {
+       it('should work', () => {
+-        wrapper = mount(<ButtonBaseNaked classes={{}}>Hello</ButtonBaseNaked>);
++        wrapper = mount(
++          <ButtonBaseNaked theme={{}} classes={{}}>
++            Hello
++          </ButtonBaseNaked>,
++        );
+         wrapper.setProps({ focusRipple: true });
+         wrapper.setState({ keyboardFocused: true });
+ 
+@@ -496,7 +505,11 @@ describe('<ButtonBase />', () => {
+ 
+     describe('prop: onKeyDown', () => {
+       it('should work', () => {
+-        wrapper = mount(<ButtonBaseNaked classes={{}}>Hello</ButtonBaseNaked>);
++        wrapper = mount(
++          <ButtonBaseNaked theme={{}} classes={{}}>
++            Hello
++          </ButtonBaseNaked>,
++        );
+         const onKeyDownSpy = spy();
+         wrapper.setProps({ onKeyDown: onKeyDownSpy });
+ 
+@@ -520,7 +533,11 @@ describe('<ButtonBase />', () => {
+ 
+     describe('Keyboard accessibility for non interactive elements', () => {
+       it('should work', () => {
+-        wrapper = mount(<ButtonBaseNaked classes={{}}>Hello</ButtonBaseNaked>);
++        wrapper = mount(
++          <ButtonBaseNaked theme={{}} classes={{}}>
++            Hello
++          </ButtonBaseNaked>,
++        );
+         const onClickSpy = spy();
+         wrapper.setProps({ onClick: onClickSpy, component: 'div' });
+ 
+@@ -547,12 +564,16 @@ describe('<ButtonBase />', () => {
+ 
+     describe('prop: disableRipple', () => {
+       it('should work', () => {
+-        wrapper = mount(<ButtonBaseNaked classes={{}}>Hello</ButtonBaseNaked>);
++        wrapper = mount(
++          <ButtonBaseNaked theme={{}} classes={{}}>
++            Hello
++          </ButtonBaseNaked>,
++        );
++        assert.strictEqual(wrapper.find(TouchRipple).length, 1);
+         const onKeyDownSpy = spy();
+-        wrapper.setProps({ onKeyDown: onKeyDownSpy });
+-        wrapper.setProps({ disableRipple: true });
+-        wrapper.setProps({ focusRipple: true });
++        wrapper.setProps({ onKeyDown: onKeyDownSpy, disableRipple: true, focusRipple: true });
+         wrapper.setState({ keyboardFocused: true });
++        assert.strictEqual(wrapper.find(TouchRipple).length, 0);
+ 
+         const eventPersistSpy = spy();
+         event = { persist: eventPersistSpy, keyCode: keycode('space') };
+diff --git a/src/IconButton/IconButton.js b/src/IconButton/IconButton.js
+index d9e8c99586..2440081f57 100644
+--- a/src/IconButton/IconButton.js
++++ b/src/IconButton/IconButton.js
+@@ -98,7 +98,6 @@ IconButton.propTypes = {
+ IconButton.defaultProps = {
+   color: 'default',
+   disabled: false,
+-  disableRipple: false,
+ };
+ 
+ export default withStyles(styles, { name: 'MuiIconButton' })(IconButton);
+diff --git a/src/IconButton/IconButton.spec.js b/src/IconButton/IconButton.spec.js
+index 690ef504b0..cbfdbb11fe 100644
+--- a/src/IconButton/IconButton.spec.js
++++ b/src/IconButton/IconButton.spec.js
+@@ -55,7 +55,7 @@ describe('<IconButton />', () => {
+ 
+   it('should have a ripple by default', () => {
+     const wrapper = shallow(<IconButton>book</IconButton>);
+-    assert.strictEqual(wrapper.props().disableRipple, false);
++    assert.strictEqual(wrapper.props().disableRipple, undefined);
+   });
+ 
+   it('should pass disableRipple to ButtonBase', () => {
+diff --git a/src/internal/SwitchBase.js b/src/internal/SwitchBase.js
+index 3e5de477ca..308ef502f8 100644
+--- a/src/internal/SwitchBase.js
++++ b/src/internal/SwitchBase.js
+@@ -1,3 +1,5 @@
++// @inheritedComponent IconButton
++
+ import React from 'react';
+ import PropTypes from 'prop-types';
+ import classNames from 'classnames';
+@@ -208,7 +210,6 @@ SwitchBase.propTypes = {
+ 
+ SwitchBase.defaultProps = {
+   checkedIcon: <CheckBoxIcon />,
+-  disableRipple: false,
+   icon: <CheckBoxOutlineBlankIcon />,
+   type: 'checkbox',
+ };
+diff --git a/src/internal/SwitchBase.spec.js b/src/internal/SwitchBase.spec.js
+index 2638daea72..5071d4c93c 100644
+--- a/src/internal/SwitchBase.spec.js
++++ b/src/internal/SwitchBase.spec.js
+@@ -84,7 +84,7 @@ describe('<SwitchBase />', () => {
+ 
+   it('should have a ripple by default', () => {
+     const wrapper = shallow(<SwitchBase />);
+-    assert.strictEqual(wrapper.props().disableRipple, false, 'should set disableRipple to false');
++    assert.strictEqual(wrapper.props().disableRipple, undefined);
+   });
+ 
+   it('should pass disableRipple={true} to IconButton', () => {
+diff --git a/src/styles/createMuiTheme.js b/src/styles/createMuiTheme.js
+index fbb7b625fd..66ee5923a2 100644
+--- a/src/styles/createMuiTheme.js
++++ b/src/styles/createMuiTheme.js
+@@ -25,12 +25,14 @@ function createMuiTheme(options: Object = {}) {
+   const breakpoints = createBreakpoints(breakpointsInput);
+ 
+   const muiTheme = {
++    breakpoints,
+     direction: 'ltr',
+-    palette,
+-    typography: createTypography(palette, typographyInput),
+     mixins: createMixins(breakpoints, spacing, mixinsInput),
+-    breakpoints,
++    overrides: {}, // Inject custom styles
++    palette,
++    props: {}, // Inject custom properties
+     shadows: shadowsInput || shadows,
++    typography: createTypography(palette, typographyInput),
+     ...deepmerge(
+       {
+         transitions,
+diff --git a/src/styles/getStylesCreator.js b/src/styles/getStylesCreator.js
+index cc5bde5555..c5e2703ff2 100644
+--- a/src/styles/getStylesCreator.js
++++ b/src/styles/getStylesCreator.js
+@@ -1,6 +1,7 @@
+ import warning from 'warning';
+ import deepmerge from 'deepmerge'; // < 1kb payload overhead when lodash/merge is > 3kb.
+ 
++// Support for the jss-expand plugin.
+ function arrayMerge(destination, source) {
+   return source;
+ }
+@@ -11,7 +12,7 @@ function getStylesCreator(stylesOrCreator) {
+   function create(theme, name) {
+     const styles = themingEnabled ? stylesOrCreator(theme) : stylesOrCreator;
+ 
+-    if (!theme.overrides || !name || !theme.overrides[name]) {
++    if (!name || !theme.overrides || !theme.overrides[name]) {
+       return styles;
+     }
+ 
+diff --git a/src/styles/getThemeProps.js b/src/styles/getThemeProps.js
+new file mode 100644
+index 0000000000..9e6a6c1162
+--- /dev/null
++++ b/src/styles/getThemeProps.js
+@@ -0,0 +1,11 @@
++function getThemeProps(params) {
++  const { theme, name } = params;
++
++  if (!name || !theme.props || !theme.props[name]) {
++    return {};
++  }
++
++  return theme.props[name];
++}
++
++export default getThemeProps;
+diff --git a/src/styles/getThemeProps.spec.js b/src/styles/getThemeProps.spec.js
+new file mode 100644
+index 0000000000..0fb943079b
+--- /dev/null
++++ b/src/styles/getThemeProps.spec.js
+@@ -0,0 +1,42 @@
++import { assert } from 'chai';
++import getThemeProps from './getThemeProps';
++
++describe('getThemeProps', () => {
++  it('should ignore empty theme', () => {
++    const props = getThemeProps({
++      theme: {},
++      name: 'MuiFoo',
++    });
++    assert.deepEqual(props, {});
++  });
++
++  it('should ignore different component', () => {
++    const props = getThemeProps({
++      theme: {
++        props: {
++          MuiBar: {
++            disableRipple: true,
++          },
++        },
++      },
++      name: 'MuiFoo',
++    });
++    assert.deepEqual(props, {});
++  });
++
++  it('should return the properties', () => {
++    const props = getThemeProps({
++      theme: {
++        props: {
++          MuiFoo: {
++            disableRipple: true,
++          },
++        },
++      },
++      name: 'MuiFoo',
++    });
++    assert.deepEqual(props, {
++      disableRipple: true,
++    });
++  });
++});
+diff --git a/src/styles/withStyles.js b/src/styles/withStyles.js
+index 9ed63e6c7c..8ba3394517 100644
+--- a/src/styles/withStyles.js
++++ b/src/styles/withStyles.js
+@@ -12,6 +12,7 @@ import createMuiTheme from './createMuiTheme';
+ import themeListener from './themeListener';
+ import createGenerateClassName from './createGenerateClassName';
+ import getStylesCreator from './getStylesCreator';
++import getThemeProps from './getThemeProps';
+ 
+ // Default JSS instance.
+ const jss = create(jssPreset());
+@@ -265,7 +266,7 @@ const withStyles = (stylesOrCreator, options = {}) => Component => {
+         classes = renderedClasses;
+       }
+ 
+-      const more = {};
++      const more = getThemeProps({ theme: this.theme, name });
+ 
+       // Provide the theme to the wrapped component.
+       // So we don't have to use the `withTheme()` Higher-order Component.
+@@ -273,7 +274,7 @@ const withStyles = (stylesOrCreator, options = {}) => Component => {
+         more.theme = this.theme;
+       }
+ 
+-      return <Component classes={classes} {...more} {...other} ref={innerRef} />;
++      return <Component {...more} classes={classes} ref={innerRef} {...other} />;
+     }
+   }
+ 
